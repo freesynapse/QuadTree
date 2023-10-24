@@ -52,7 +52,7 @@ public:
     glm::vec2 m_sel_vertex = glm::vec2(0.0f);
     
     //
-    const size_t N = 50000;
+    const size_t N = 1000000;
     std::vector<glm::vec2> m_points;
 
     // flags
@@ -118,8 +118,8 @@ void layer::__debug_setup_BH_test()
     Timer t;
 
     m_qt = std::make_shared<QuadtreeBH>(N);
-    int n_groupings = 200;
-    int n_per_group = 200;
+    int n_groupings = 300;
+    int n_per_group = 300;
     for (int i = 0; i < n_groupings; i++)
     {
         glm::vec2 mpos = glm::vec2(uniform(gen), uniform(gen));
