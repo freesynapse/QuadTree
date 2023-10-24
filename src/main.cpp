@@ -52,7 +52,7 @@ public:
     glm::vec2 m_sel_vertex = glm::vec2(0.0f);
     
     //
-    const size_t N = 10000;
+    const size_t N = 50000;
     std::vector<glm::vec2> m_points;
 
     // flags
@@ -113,13 +113,13 @@ void layer::__debug_setup_BH_test()
 {
     std::random_device rd{};
     std::mt19937 gen{rd()};
-    std::normal_distribution<float> norm{ 0.0f, 0.025f };
-    std::uniform_real_distribution<float> uniform{ -1.0f, 1.0f };
+    std::normal_distribution<float> norm{ 0.0f, 0.05f };
+    std::uniform_real_distribution<float> uniform{ -0.9f, 0.9f };
     Timer t;
 
     m_qt = std::make_shared<QuadtreeBH>(N);
-    int n_groupings = 20;
-    int n_per_group = 20;
+    int n_groupings = 200;
+    int n_per_group = 200;
     for (int i = 0; i < n_groupings; i++)
     {
         glm::vec2 mpos = glm::vec2(uniform(gen), uniform(gen));
@@ -300,7 +300,8 @@ void layer::onUpdate(float _dt)
     size_t vcount = m_renderer->getTotalVertexCount();
     size_t bh_vcount = m_renderer->getBHVertexCount();
     m_font->addString(2.0f, fontHeight * ++i, "total vertices = %zu", vcount);
-    m_font->addString(2.0f, fontHeight * ++i, "BH vertices    = %zu (%.2f)", bh_vcount, (float)bh_vcount / (float)vcount);
+    m_font->addString(2.0f, fontHeight * ++i, "BH vertices    = %zu (%.2f%%)", bh_vcount, 100.0f * (float)bh_vcount / (float)vcount);
+    m_font->addString(2.0f, fontHeight * ++i, "theta = %.2f", s_thetaBH);
     m_font->endRenderBlock();
 
     //
@@ -333,7 +334,13 @@ void layer::onKeyDownEvent(Event *_e)
                 EventHandler::push_event(new WindowCloseEvent());
                 break;
 
-            case SYN_KEY_SPACE:
+            case SYN_KEY_KP_ADD:
+                s_thetaBH += 0.05f;
+                s_thetaBH = clamp(s_thetaBH, 0.0f, 1.0f);
+                break;
+            case SYN_KEY_KP_SUBTRACT:
+                s_thetaBH -= 0.05f;
+                s_thetaBH = clamp(s_thetaBH, 0.0f, 1.0f);
                 break;
 
             case SYN_KEY_TAB:

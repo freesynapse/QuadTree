@@ -11,8 +11,9 @@ uniform float u_zoom_level;
 void main()
 {
 	gl_Position = u_view_projection_matrix * vec4(a_position.xy, 0.0, 1.0);
-	gl_PointSize = max(((a_position.z / 5.0) * (u_point_scale)) / u_zoom_level,
-					   u_point_scale / u_zoom_level);
+	//gl_PointSize = max(((a_position.z / 5.0) * (u_point_scale)) / u_zoom_level,
+	//				   u_point_scale / u_zoom_level);
+	gl_PointSize = u_point_scale / u_zoom_level;
 }
 
 

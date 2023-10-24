@@ -141,6 +141,7 @@ protected:
 
 };
 
+extern float s_thetaBH;
 
 
 

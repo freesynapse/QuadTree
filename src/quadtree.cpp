@@ -5,6 +5,8 @@
 #include "quadtree.h"
 
 
+float s_thetaBH = 1.0f;
+
 //
 QuadtreeBH::QuadtreeBH(size_t _max_vertices, const AABB2 &_aabb, uint32_t _level)
 {
@@ -154,7 +156,8 @@ void QuadtreeBH::approxBH(QuadtreeBH *_qt,
 
     float s = _qt->m_aabb.size();
     float d = glm::distance(_qt->m_mean, _cmp_vertex);
-    bool is_close = s / d >= THETA_BH;
+    // bool is_close = s / d >= THETA_BH;
+    bool is_close = s / d >= s_thetaBH;
 
     // close with children
     if (is_close && _qt->m_children[0] != NULL)
