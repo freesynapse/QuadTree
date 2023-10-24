@@ -150,19 +150,15 @@ void layer::onAttach()
     m_font = MakeRef<Font>("../assets/ttf/JetBrains/JetBrainsMono-Medium.ttf", 14.0f);
     m_font->setColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-    //===================================================================================
-    //==                            QUADTREE DEBUG                                     ==
-    //===================================================================================
+    // QuadtreeBH tests -----------------------------------------------------------------
 
-    // generate the tree
+    // generate tree
     // __debug_setup_rnorm();
     // __debug_setup_empty();
     __debug_setup_BH_test();
 
     // Initialize QuadtreeBH renderer (BHRenderer)
     m_renderer = std::make_shared<BHRenderer>(m_qt);
-    // m_renderer->initializeGeometry();
-    // m_renderer->updateGeometry();
     
     // Initialize camera
     m_camera = API::newOrthographicCamera(1.0f, 50.0f);
@@ -246,7 +242,6 @@ void layer::__debug_insert_on_rclick()
         m_qt->insert(m_qt, p);
     }
 
-    //
     m_renderer->updateGeometry();
 
 }

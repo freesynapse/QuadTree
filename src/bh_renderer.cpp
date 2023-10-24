@@ -32,8 +32,6 @@ void BHRenderer::viewportResizeCallback(Event *_e)
     ViewportResizeEvent *e = dynamic_cast<ViewportResizeEvent *>(_e);
     m_viewportSz = e->getViewport();
 
-    //
-    // initializeGeometry();
     updateGeometry();
 }
 
@@ -50,24 +48,14 @@ void BHRenderer::initializeGeometry()
                                    ShaderDataType::Float2, 
                                    "a_position" }});
 
-    //
-    // std::vector<glm::vec2> vertices;
-    // m_qt->getVertices(m_qt, vertices);
-    // m_vertexCount = vertices.size();
-
     // vertices of tree data
     m_verticesVBO = API::newVertexBuffer(GL_DYNAMIC_DRAW);
     m_verticesVBO->setData(/*vertices.data()*/NULL, sizeof(glm::vec2) * m_qt->m_maxVertices);
     m_verticesVBO->setBufferLayout(default_layout);
     m_verticesVAO = API::newVertexArray(m_verticesVBO);
     
-    //
-    // std::vector<glm::vec2> aabbs;
-    // m_qt->getAABBLines(m_qt, aabbs);
-    // m_aabbCount = aabbs.size();
-    m_maxAABBCount = 8 * m_qt->m_maxVertices;
-
     // lines for AABBs
+    m_maxAABBCount = 8 * m_qt->m_maxVertices;
     m_aabbVBO = API::newVertexBuffer(GL_DYNAMIC_DRAW);
     m_aabbVBO->setData(/*aabbs.data()*/ NULL, sizeof(glm::vec2) * m_maxAABBCount);
     m_aabbVBO->setBufferLayout(default_layout);
@@ -174,13 +162,9 @@ void BHRenderer::render(const Ref<OrthographicCamera> &_camera)
     // Highlight closest vertex
     if (m_renderHighlightVertex && m_highlightVertex_VAO != nullptr)
     {
-        // glPointSize(m_defaultPointSize + 10.0f);
         m_shader->setUniform4fv("u_color", { 0.9f, 0.9f, 0.9f, 0.6f });
         renderer.drawArrays(m_highlightVertex_VAO, 1, 0, true, GL_POINTS);
-        // glPointSize(m_defaultPointSize);
     }
-
-    // m_shader->disable();
 
     // Render according to Barnes-Hut
     if (m_renderBH && m_BH_verticesVAO != nullptr)
@@ -190,11 +174,8 @@ void BHRenderer::render(const Ref<OrthographicCamera> &_camera)
         m_BHshader->setUniform1f("u_point_scale", m_defaultPointSize);
         m_BHshader->setUniform1f("u_zoom_level", _camera->getZoomLevel());
         
-        // renderer.enableGLenum(GL_PROGRAM_POINT_SIZE);
         m_BHshader->setUniform4fv("u_color", { 1.0f, 0.5f, 0.0f, 0.5f });
         renderer.drawArrays(m_BH_verticesVAO, m_BH_vertexCount, 0, true, GL_POINTS);
-        // renderer.disableGLenum(GL_PROGRAM_POINT_SIZE);
-
     }
 
 
@@ -236,15 +217,6 @@ void BHRenderer::highlightBH(std::vector<glm::vec3> &_bh_vertices)
     if (m_BH_verticesVAO != nullptr)
     {
         m_BH_vertexCount = _bh_vertices.size();
-        // if (__debug_prev_bh_count != m_BH_vertexCount)
-        // {
-            // SYN_TRACE("BH vertex count: ", m_BH_vertexCount);
-            // for (auto &v : _bh_vertices)
-            // {
-                // SYN_TRACE("bh v: ", v.x, ", ", v.y, ", mass=", v.z);
-            // }
-            // __debug_prev_bh_count = m_BH_vertexCount;
-        // }
         m_BH_verticesVBO->updateBufferData(&(_bh_vertices)[0], 
                                            sizeof(glm::vec3) * m_BH_vertexCount,
                                            0);

@@ -151,7 +151,6 @@ void QuadtreeBH::approxBH(QuadtreeBH *_qt,
     if (!_qt->m_vertexCount)
         return;
 
-    // TODO : trivial case for when the node is in this tree?
     // TODO : check that we don't compare to itself
 
     float s = _qt->m_aabb.size();
