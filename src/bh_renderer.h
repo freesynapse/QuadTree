@@ -14,9 +14,17 @@ public:
     BHRenderer(Ref<QuadtreeBH> &_qt);
     ~BHRenderer() = default;
 
-    void initializeGeometry(Event *_e);
+    void viewportResizeCallback(Event *_e);
+    void initializeGeometry();
+    void updateGeometry();  // called after QuadtreeBH->insert():s    
     void render(const Ref<OrthographicCamera> &_camera);
 
+    // geometry update functions called from main
+    void highlightAABB(const AABB2 &_aabb);
+    void highlightVertex(const glm::vec2 &_v);
+    void highlightBH(std::vector<glm::vec3> &_bh_vertices);
+
+    // accessors
     void toggleAABB() { m_renderAABB = !m_renderAABB; }
     void toggleRenderBH() { m_renderBH = !m_renderBH; }
     void toggleHighlightAABB() { m_renderHighlightAABB = !m_renderHighlightAABB; }
@@ -27,30 +35,33 @@ public:
     bool getRenderHighlightAABB() { return m_renderHighlightAABB; }
     bool getRenderHighlightVertex() { return m_renderHighlightVertex; }
 
-    void highlightAABB(const AABB2 &_aabb);
-    void highlightVertex(const glm::vec2 &_v);
-    void highlightBH(std::vector<VertexBH> &_bh_vertices);
+    size_t getTotalVertexCount() { return m_vertexCount; }
+    size_t getBHVertexCount() { return m_BH_vertexCount; }
+
+
 
 
 private:
     //
     Ref<QuadtreeBH> m_qt = nullptr;
-    Ref<Shader> m_shader;
+    Ref<Shader> m_shader = nullptr;
+    Ref<Shader> m_BHshader = nullptr;
 
-    bool m_geometry_set = false;
-    float m_pointSize = 5.0f;
+    glm::ivec2 m_viewportSz = { 0, 0 };
+
+    bool m_buffersInitialized = false;
+    float m_defaultPointSize = 7.0f;
     
-    // geometry
-    AABB2 m_lim;
-    glm::vec2 m_inv_range;
-
-    // points
+    // 2d vertices (ie the data)
     size_t m_vertexCount = 0;
+    Ref<VertexBuffer> m_verticesVBO;
     Ref<VertexArray> m_verticesVAO;
     
-    // AABBs
+    // tree AABBs
     bool m_renderAABB = true;
+    size_t m_maxAABBCount;
     size_t m_aabbCount = 0;
+    Ref<VertexBuffer> m_aabbVBO;
     Ref<VertexArray> m_aabbVAO;
 
     // selected AABB
@@ -67,6 +78,7 @@ private:
     // BH vertices
     bool m_renderBH = false;
     size_t m_BH_vertexCount = 0;
+    size_t __debug_prev_bh_count = 0;
     Ref<VertexBuffer> m_BH_verticesVBO = nullptr;
     Ref<VertexArray> m_BH_verticesVAO = nullptr;
 

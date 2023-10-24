@@ -7,7 +7,7 @@
 
 #define MAX_DEPTH               12
 #define MAX_VERTICES_PER_NODE   8
-#define THETA_BH                0.5f    // compared
+#define THETA_BH                1.0f    // ratio aabb size and between distance
 
 //
 struct AABB2
@@ -49,18 +49,6 @@ struct AABB2
 
 };
 
-//
-struct VertexBH
-{
-    glm::vec2 v;
-    float mass;
-
-    VertexBH() {}
-    VertexBH(const glm::vec2 _v, float _mass) :
-        v(_v), mass(_mass) 
-    {}
-};
-
 
 /* QuadtreeBH used for Barnes-Hut approximation. Inherits the base class. All sub-trees 
  * store the following:
@@ -80,10 +68,8 @@ public:
     ~QuadtreeBH() = default;
 
     void destroy(QuadtreeBH *_qt);
-    __attribute__((always_inline)) void destroy(std::shared_ptr<QuadtreeBH> _qt) { destroy(_qt.get()); }
-
     void insert(QuadtreeBH *_qt, const glm::vec2 &_v);
-    __attribute__((always_inline)) void insert(std::shared_ptr<QuadtreeBH> _qt, const glm::vec2 &_v) { insert(_qt.get(), _v); }
+    uint32_t depth(QuadtreeBH *_qt);
 
 
     // Accessors
@@ -92,45 +78,48 @@ public:
     const uint32_t &getLevel() { return m_level; }
 
     void getAABBLines(QuadtreeBH *_qt, std::vector<glm::vec2> &_out_vec_lines);
-    __attribute__((always_inline)) void getAABBLines(std::shared_ptr<QuadtreeBH> _qt, std::vector<glm::vec2> &_out_vec_lines) { getAABBLines(_qt.get(), _out_vec_lines); }
-
     void getVertices(QuadtreeBH *_qt, std::vector<glm::vec2> &_out_vec_points);
-    __attribute__((always_inline)) void getVertices(std::shared_ptr<QuadtreeBH> _qt, std::vector<glm::vec2> &_out_vec_points) { getVertices(_qt.get(), _out_vec_points); }
 
 
-    // Barnes-Hut approximation
+    // Barnes-Hut approximation ---------------------------------------------------------
     //
-    void approxBH(QuadtreeBH *_qt, const glm::vec2 &_cmp_vertex, std::vector<VertexBH> &_out_v_bh);
-    __attribute__((always_inline)) void approxBH(std::shared_ptr<QuadtreeBH> _qt, 
-                                                 const glm::vec2 &_cmp_vertex, 
-                                                 std::vector<VertexBH> &_out_v_bh)
-    { approxBH(_qt.get(), _cmp_vertex, _out_v_bh); }
+
+    // Get vertices (and masses) of the tree based on Barnes-Hut approximation for 
+    // distant vertices. A 3-comp vector is used for this (for shader packing) where
+    // .xy is the position of the mean vertex and .z is the mass
+    void approxBH(QuadtreeBH *_qt, const glm::vec2 &_cmp_vertex, std::vector<glm::vec3> &_out_v_bh);
 
     // Find the closest vertex to an incoming vector (for interactive debugging)
     void getClosestVertex(QuadtreeBH *_qt, const glm::vec2 &_cmp_vertex, glm::vec2 &_out_closest);
+
+    // Interrogate the tree for incoming vector and return AABB2
+    void getSelectedAABB(QuadtreeBH *_qt, const glm::vec2 _v, AABB2 &_out_aabb);
+    void getSelectedSubtree(QuadtreeBH *_qt, const glm::vec2 &_v, QuadtreeBH **_out_qt);
+
+
+    // Overloads for std::shared_ptr<>
+    __attribute__((always_inline)) void destroy(std::shared_ptr<QuadtreeBH> _qt) { destroy(_qt.get()); }
+    __attribute__((always_inline)) void insert(std::shared_ptr<QuadtreeBH> _qt, const glm::vec2 &_v) { insert(_qt.get(), _v); }
+    __attribute__((always_inline)) uint32_t depth(std::shared_ptr<QuadtreeBH> _qt) { return depth(_qt.get());  }
+    __attribute__((always_inline)) void getAABBLines(std::shared_ptr<QuadtreeBH> _qt, std::vector<glm::vec2> &_out_vec_lines) { getAABBLines(_qt.get(), _out_vec_lines); }
+    __attribute__((always_inline)) void getVertices(std::shared_ptr<QuadtreeBH> _qt, std::vector<glm::vec2> &_out_vec_points) { getVertices(_qt.get(), _out_vec_points); }
+    __attribute__((always_inline)) void approxBH(std::shared_ptr<QuadtreeBH> _qt, 
+                                                 const glm::vec2 &_cmp_vertex, 
+                                                 std::vector<glm::vec3> &_out_v_bh)
+    { approxBH(_qt.get(), _cmp_vertex, _out_v_bh); }
     __attribute__((always_inline)) void getClosestVertex(std::shared_ptr<QuadtreeBH> _qt, const glm::vec2 &_cmp_vertex, glm::vec2 &_out_closest)
     {
         getClosestVertex(_qt.get(), _cmp_vertex, _out_closest);
     }
-
-
-    // Interrogate the tree for incoming vector and return AABB2
-    void getSelectedAABB(QuadtreeBH *_qt, const glm::vec2 _v, AABB2 &_out_aabb);
     __attribute__((always_inline)) void getSelectedAABB(std::shared_ptr<QuadtreeBH> _qt, 
                                                         const glm::vec2 _v, 
                                                         AABB2 &_out_aabb) 
     { getSelectedAABB(_qt.get(), _v, _out_aabb); }
-    
-    void getSelectedSubtree(QuadtreeBH *_qt, const glm::vec2 &_v, QuadtreeBH **_out_qt);
-    __attribute__((always_inline)) void getSelectedSubtree(std::shared_ptr<QuadtreeBH> _qt, 
+        __attribute__((always_inline)) void getSelectedSubtree(std::shared_ptr<QuadtreeBH> _qt, 
                                                            const glm::vec2 &_v, 
                                                            QuadtreeBH **_out_qt)
     { getSelectedSubtree(_qt.get(), _v, _out_qt); }
 
-
-    // DEBUG FUNCTIONS
-    uint32_t __debug_depth(QuadtreeBH *_qt);
-    __attribute__((always_inline)) uint32_t __debug_depth(std::shared_ptr<QuadtreeBH> _qt) { return __debug_depth(_qt.get());  }
 
 
 protected:
@@ -147,8 +136,8 @@ protected:
 
     // Barnes-Hut variables
     glm::vec2 m_mean = glm::vec2(0.0f); // mean of all vertices at this node or below
-    uint32_t m_vertexCount = 0;
-    glm::vec2 m_total; // adds per incoming point
+    glm::vec2 m_total = glm::vec2(0.0f); // adds per incoming point
+    uint32_t m_vertexCount = 0; // corresponding to the mass
 
 };
 

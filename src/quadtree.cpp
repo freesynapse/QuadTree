@@ -109,14 +109,17 @@ void QuadtreeBH::getAABBLines(QuadtreeBH *_qt, std::vector<glm::vec2> &_out_vec_
     // no children, add bounding box
     if (_qt->m_children[0] == NULL)
     {
-        _out_vec_lines.push_back({ aabb.v0.x, aabb.v0.y });
-        _out_vec_lines.push_back({ aabb.v1.x, aabb.v0.y });
-        _out_vec_lines.push_back({ aabb.v0.x, aabb.v1.y });
-        _out_vec_lines.push_back({ aabb.v1.x, aabb.v1.y });
-        _out_vec_lines.push_back({ aabb.v0.x, aabb.v0.y });
-        _out_vec_lines.push_back({ aabb.v0.x, aabb.v1.y });
-        _out_vec_lines.push_back({ aabb.v1.x, aabb.v0.y });
-        _out_vec_lines.push_back({ aabb.v1.x, aabb.v1.y });
+        // if (_qt->m_vertices.size() > 0)
+        // {
+            _out_vec_lines.push_back({ aabb.v0.x, aabb.v0.y });
+            _out_vec_lines.push_back({ aabb.v1.x, aabb.v0.y });
+            _out_vec_lines.push_back({ aabb.v0.x, aabb.v1.y });
+            _out_vec_lines.push_back({ aabb.v1.x, aabb.v1.y });
+            _out_vec_lines.push_back({ aabb.v0.x, aabb.v0.y });
+            _out_vec_lines.push_back({ aabb.v0.x, aabb.v1.y });
+            _out_vec_lines.push_back({ aabb.v1.x, aabb.v0.y });
+            _out_vec_lines.push_back({ aabb.v1.x, aabb.v1.y });
+        // }
     }
     else
     {
@@ -140,29 +143,36 @@ void QuadtreeBH::getVertices(QuadtreeBH *_qt, std::vector<glm::vec2> &_out_vec_p
 //---------------------------------------------------------------------------------------
 void QuadtreeBH::approxBH(QuadtreeBH *_qt, 
                           const glm::vec2 &_cmp_vertex, 
-                          std::vector<VertexBH> &_out_v_bh)
+                          std::vector<glm::vec3> &_out_v_bh)
 {
+    // skip empty trees
     if (!_qt->m_vertexCount)
         return;
 
+    // TODO : trivial case for when the node is in this tree?
+    // TODO : check that we don't compare to itself
+
     float s = _qt->m_aabb.size();
     float d = glm::distance(_qt->m_mean, _cmp_vertex);
+    bool is_close = s / d >= THETA_BH;
 
     // close with children
-    if (s/d >= THETA_BH && _qt->m_children[0] != NULL)
+    if (is_close && _qt->m_children[0] != NULL)
     {
         for (int i = 0; i < 4; i++)
             _qt->m_children[i]->approxBH(_qt->m_children[i], _cmp_vertex, _out_v_bh);
     }
+    
     // close but without children (leaf node) -- all vertices are relevant
-    else if (s/d >= THETA_BH && _qt->m_children[0] == NULL)
+    else if (is_close && _qt->m_children[0] == NULL)
     {
         for (auto &v : _qt->m_vertices)
-            _out_v_bh.push_back(VertexBH(v, 1.0f));
+            _out_v_bh.push_back(glm::vec3(v.x, v.y, 1.0f));
     }
+    
     // sufficiently far away
-    else if (s/d < THETA_BH)
-        _out_v_bh.push_back(VertexBH(_qt->m_mean, (float)_qt->m_vertexCount));
+    else if (!is_close)
+        _out_v_bh.push_back(glm::vec3(_qt->m_mean.x, _qt->m_mean.y, (float)_qt->m_vertexCount));
 
 }
 
@@ -223,13 +233,13 @@ void QuadtreeBH::getSelectedSubtree(QuadtreeBH *_qt,
 }
 
 //---------------------------------------------------------------------------------------
-uint32_t QuadtreeBH::__debug_depth(QuadtreeBH *_qt)
+uint32_t QuadtreeBH::depth(QuadtreeBH *_qt)
 {
     if (_qt->m_children[0] != NULL)
     {
         uint32_t d = 0;
         for (int i = 0; i < 4; i++)
-            d = std::max(d, _qt->__debug_depth(_qt->m_children[i]));
+            d = std::max(d, _qt->depth(_qt->m_children[i]));
         return std::max(d, _qt->m_level);
     }
     // leaf node
@@ -237,4 +247,6 @@ uint32_t QuadtreeBH::__debug_depth(QuadtreeBH *_qt)
         return _qt->m_level;
 
 }
+
+
 

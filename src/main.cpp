@@ -19,11 +19,17 @@ public:
     virtual void onUpdate(float _dt) override;
     virtual void onImGuiRender() override;
     void onKeyDownEvent(Event *_e);
-    void onMouseButtonEvent(Event *_e) {}
+    void onMouseButtonEvent(Event *_e);
 
-    // debug function including mouse interactive capacity
+    // debug functions
     void __debug_setup_rnorm();
+    void __debug_setup_empty();
+    void __debug_setup_BH_test();
+    //
+    void __debug_update_tf_point();
+    //
     void __debug_tree_interaction();
+    void __debug_insert_on_rclick();
 
 
 public:
@@ -43,10 +49,10 @@ public:
     QuadtreeBH *m_selQT = NULL;
     size_t m_selQT_pointCount = 0;
     uint32_t m_selQT_level = 0;
-    glm::vec2 m_sel_vertex;
+    glm::vec2 m_sel_vertex = glm::vec2(0.0f);
     
     //
-    size_t N;
+    const size_t N = 10000;
     std::vector<glm::vec2> m_points;
 
     // flags
@@ -66,14 +72,12 @@ Application* CreateSynapseApplication() { return new syn_app_instance(); }
 void layer::__debug_setup_rnorm()
 {
     // test data
-    N = 100000;
     std::random_device rd{};
     std::mt19937 gen{rd()};
     std::normal_distribution<float> norm{0.0f, 25.0f};
     glm::vec2 min(1000.0f), max(-1000.0f);
     for (int i = 0; i < N; i++)
     {
-        // glm::vec2 p = Random::rand2_f_r(-100.0f, 100.0f);
         glm::vec2 p = { norm(gen), norm(gen) };
         m_points.push_back(p);
         min.x = std::min(p.x, min.x);
@@ -81,7 +85,6 @@ void layer::__debug_setup_rnorm()
         max.x = std::max(p.x, max.x);
         max.y = std::max(p.y, max.y);
     }
-
     //
     m_qt = std::make_shared<QuadtreeBH>(N);
 
@@ -93,7 +96,44 @@ void layer::__debug_setup_rnorm()
         p = (((p - min) * inv_range) - 0.5f) * 2.0f;
         m_qt->insert(m_qt, glm::vec2(p.x, p.y));
     }
-    printf(">>> tree created in %.4f ms.\n", t.getDeltaTimeMs());
+
+    SYN_TRACE("tree created in ", t.getDeltaTimeMs(), "ms.");
+
+}
+
+//----------------------------------------------------------------------------------------
+void layer::__debug_setup_empty()
+{
+    m_qt = std::make_shared<QuadtreeBH>(N);
+
+}
+
+//----------------------------------------------------------------------------------------
+void layer::__debug_setup_BH_test()
+{
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::normal_distribution<float> norm{ 0.0f, 0.025f };
+    std::uniform_real_distribution<float> uniform{ -1.0f, 1.0f };
+    Timer t;
+
+    m_qt = std::make_shared<QuadtreeBH>(N);
+    int n_groupings = 20;
+    int n_per_group = 20;
+    for (int i = 0; i < n_groupings; i++)
+    {
+        glm::vec2 mpos = glm::vec2(uniform(gen), uniform(gen));
+        for (int i = 0; i < n_per_group; i++)
+        {
+            glm::vec2 p = glm::vec2(norm(gen), norm(gen)) + mpos;
+            p.x = clamp(p.x, -1.0f, 1.0f);
+            p.y = clamp(p.y, -1.0f, 1.0f);
+            m_qt->insert(m_qt, p);
+        }
+        
+    }
+    SYN_TRACE("tree created in ", t.getDeltaTimeMs(), "ms.");
+
 }
 
 //----------------------------------------------------------------------------------------
@@ -114,9 +154,15 @@ void layer::onAttach()
     //==                            QUADTREE DEBUG                                     ==
     //===================================================================================
 
-    
+    // generate the tree
+    // __debug_setup_rnorm();
+    // __debug_setup_empty();
+    __debug_setup_BH_test();
+
     // Initialize QuadtreeBH renderer (BHRenderer)
     m_renderer = std::make_shared<BHRenderer>(m_qt);
+    // m_renderer->initializeGeometry();
+    // m_renderer->updateGeometry();
     
     // Initialize camera
     m_camera = API::newOrthographicCamera(1.0f, 50.0f);
@@ -133,7 +179,7 @@ void layer::onAttach()
 }
 
 //----------------------------------------------------------------------------------------
-void layer::__debug_tree_interaction()
+void layer::__debug_update_tf_point()
 {
     static auto &renderer = Renderer::get();
     auto &mpos = InputManager::get_mouse_position();
@@ -148,7 +194,12 @@ void layer::__debug_tree_interaction()
     // transform to local AABB coordinates
     m_tf_point = glm::vec4(px.x, px.y, 0.0f, 1.0f) * glm::inverse(m_camera->getViewProjectionMatrix());
     m_tf_point += glm::vec4(m_camera->getPosition().x, m_camera->getPosition().y, 0.0f, 0.0f);
-    
+
+}
+
+//----------------------------------------------------------------------------------------
+void layer::__debug_tree_interaction()
+{    
     // select subtree
     m_qt->getSelectedSubtree(m_qt, m_tf_point, &m_selQT);
 
@@ -164,13 +215,39 @@ void layer::__debug_tree_interaction()
     }
 
     // Enabling Barnes-Hut approximation
-    if (InputManager::is_button_pressed(SYN_MOUSE_BUTTON_1) &&
-        m_renderer->getRenderBH())
+    if (m_renderer->getRenderBH())
     {
-        std::vector<VertexBH> v_BH;
-        m_qt->approxBH(m_qt, m_tf_point, v_BH);
+        // use highlighted vertex as query if enabled, else mouse pos
+        glm::vec2 cmp_vertex = { m_tf_point.x, m_tf_point.y };
+        if (m_renderer->getRenderHighlightVertex() && m_sel_vertex != glm::vec2(0.0f))
+            cmp_vertex = m_sel_vertex;
+
+        std::vector<glm::vec3> v_BH;
+        m_qt->approxBH(m_qt, cmp_vertex, v_BH);
         m_renderer->highlightBH(v_BH);
     }
+
+}
+
+//----------------------------------------------------------------------------------------
+void layer::__debug_insert_on_rclick()
+{
+    glm::vec2 mpos = { m_tf_point.x, m_tf_point.y };
+
+    std::random_device rd{};
+    std::mt19937 gen{rd()};
+    std::normal_distribution<float> norm{ 0.0f, 0.025f };
+
+    for (int i = 0; i < 10; i++)
+    {
+        glm::vec2 p = glm::vec2(norm(gen), norm(gen)) + mpos;
+        p.x = clamp(p.x, -1.0f, 1.0f);
+        p.y = clamp(p.y, -1.0f, 1.0f);
+        m_qt->insert(m_qt, p);
+    }
+
+    //
+    m_renderer->updateGeometry();
 
 }
 
@@ -189,6 +266,10 @@ void layer::onUpdate(float _dt)
 
     // -- BEGINNING OF SCENE -- //
 
+    // update mouse position relative to camera and tree
+    __debug_update_tf_point();
+
+    // interact with tree
     __debug_tree_interaction();
 
     m_camera->onUpdate(_dt);
@@ -205,21 +286,21 @@ void layer::onUpdate(float _dt)
     // TODO: all text rendering should go into an overlay layer.
     static float fontHeight = m_font->getFontHeight() + 1.0f;
     int i = 0;
-    static int depth = m_qt->__debug_depth(m_qt);
+    static int depth = m_qt->depth(m_qt);
     //
     m_font->beginRenderBlock();
 	m_font->addString(2.0f, fontHeight * ++i, "fps=%.0f  VSYNC=%s", TimeStep::getFPS(), Application::get().getWindow().isVSYNCenabled() ? "ON" : "OFF");
-    // m_font->addString(2.0f, fontHeight * ++i, "tree depth: %d", depth);
     m_font->addString(2.0f, fontHeight * ++i, "CAMERA zoom level: %.4f", m_camera->getZoomLevel());
-    // m_font->addString(2.0f, fontHeight * ++i, "selected_point= | %.4f  %.4f |", m_selected_point.x, m_selected_point.y);
-    // m_font->addString(2.0f, fontHeight * ++i, "tf_point=       | %.4f  %.4f |", m_tf_point.x, m_tf_point.y);
     m_font->addString(2.0f, fontHeight * ++i, "RENDER:  AABB[F1] %s  BH[TAB] %s  hl AABB[F2] %s  hl vertex[F3] %s",
         m_renderer->getRenderAABB() ? "true " : "false",
         m_renderer->getRenderBH() ? "true " : "false",
         m_renderer->getRenderHighlightAABB() ? "true " : "false",
         m_renderer->getRenderHighlightVertex() ? "true " : "false");
-    m_font->addString(2.0f, fontHeight * ++i, "selected level =%d", m_selQT_level);
-    m_font->addString(2.0f, fontHeight * ++i, "selected points=%zu", m_selQT_pointCount);
+    m_font->addString(2.0f, fontHeight * ++i, "sel vcount = %zu, sel level = %d", m_selQT_pointCount, m_selQT_level);
+    size_t vcount = m_renderer->getTotalVertexCount();
+    size_t bh_vcount = m_renderer->getBHVertexCount();
+    m_font->addString(2.0f, fontHeight * ++i, "total vertices = %zu", vcount);
+    m_font->addString(2.0f, fontHeight * ++i, "BH vertices    = %zu (%.2f)", bh_vcount, (float)bh_vcount / (float)vcount);
     m_font->endRenderBlock();
 
     //
@@ -235,7 +316,7 @@ void layer::onKeyDownEvent(Event *_e)
 
     static bool vsync = true;
 
-    if (e->getAction() == GLFW_PRESS)
+    if (e->getAction() == SYN_KEY_PRESSED)
     {
         switch (e->getKey())
         {
@@ -250,6 +331,9 @@ void layer::onKeyDownEvent(Event *_e)
 
             case SYN_KEY_ESCAPE:
                 EventHandler::push_event(new WindowCloseEvent());
+                break;
+
+            case SYN_KEY_SPACE:
                 break;
 
             case SYN_KEY_TAB:
@@ -276,8 +360,32 @@ void layer::onKeyDownEvent(Event *_e)
                 m_toggleCulling = !m_toggleCulling;
                 Renderer::setCulling(m_toggleCulling);
                 break;
+            
+            default:
+                break;
         }
     }
+}
+
+//----------------------------------------------------------------------------------------
+void layer::onMouseButtonEvent(Event *_e)
+{
+    MouseButtonEvent *e = dynamic_cast<MouseButtonEvent *>(_e);
+
+    switch (e->getButton())
+    {
+        case SYN_MOUSE_BUTTON_1:
+            break;
+        
+        case SYN_MOUSE_BUTTON_2:
+            if (e->getAction() == SYN_MOUSE_PRESSED)
+                __debug_insert_on_rclick();
+            break;
+        
+        default:
+            break;
+    }
+
 }
 
 //----------------------------------------------------------------------------------------
