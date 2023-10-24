@@ -50,7 +50,7 @@ private:
     glm::ivec2 m_viewportSz = { 0, 0 };
 
     bool m_buffersInitialized = false;
-    float m_defaultPointSize = 7.0f;
+    float m_defaultPointSize = 4.0f;
     
     // 2d vertices (ie the data)
     size_t m_vertexCount = 0;

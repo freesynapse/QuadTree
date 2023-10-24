@@ -191,7 +191,7 @@ void BHRenderer::render(const Ref<OrthographicCamera> &_camera)
         m_BHshader->setUniform1f("u_zoom_level", _camera->getZoomLevel());
         
         // renderer.enableGLenum(GL_PROGRAM_POINT_SIZE);
-        m_BHshader->setUniform4fv("u_color", { 1.0f, 0.5f, 0.0f, 0.7f });
+        m_BHshader->setUniform4fv("u_color", { 1.0f, 0.5f, 0.0f, 1.0f });
         renderer.drawArrays(m_BH_verticesVAO, m_BH_vertexCount, 0, true, GL_POINTS);
         // renderer.disableGLenum(GL_PROGRAM_POINT_SIZE);
 

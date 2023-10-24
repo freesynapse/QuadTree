@@ -1,5 +1,5 @@
 #type VERTEX_SHADER
-#version 330 core
+#version 450 core
 
 layout(location = 0) in vec2 a_position;
 
@@ -16,7 +16,7 @@ void main()
 
 
 #type FRAGMENT_SHADER
-#version 330 core
+#version 450 core
 
 layout(location = 0) out vec4 out_color;
 
