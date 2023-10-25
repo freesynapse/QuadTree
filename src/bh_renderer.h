@@ -8,6 +8,27 @@
 using namespace Syn;
 
 
+//
+class BHRenderObj
+{
+public:
+    BHRenderObj() {}
+    BHRenderObj(uint32_t _gl_usage=GL_DYNAMIC_DRAW);
+    ~BHRenderObj() = default;
+
+    void render();
+
+private:
+    std::string m_ID;
+    bool m_renderObj = true;
+    uint32_t m_vertexCount = 0;
+    uint32_t m_vertexMaxCount = 0;
+    Ref<VertexBuffer> m_vbo = nullptr;
+    Ref<VertexArray> m_vao = nullptr;
+
+};
+
+
 class BHRenderer
 {
 public:
@@ -50,7 +71,7 @@ private:
     glm::ivec2 m_viewportSz = { 0, 0 };
 
     bool m_buffersInitialized = false;
-    float m_defaultPointSize = 4.0f;
+    float m_defaultPointSize = 3.0f;
     
     // 2d vertices (ie the data)
     size_t m_vertexCount = 0;
@@ -58,7 +79,7 @@ private:
     Ref<VertexArray> m_verticesVAO;
     
     // tree AABBs
-    bool m_renderAABB = true;
+    bool m_renderAABB = false;
     size_t m_maxAABBCount;
     size_t m_aabbCount = 0;
     Ref<VertexBuffer> m_aabbVBO;

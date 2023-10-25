@@ -306,10 +306,7 @@ void layer::onUpdate(float _dt)
 //----------------------------------------------------------------------------------------
 void layer::onKeyDownEvent(Event *_e)
 {
-    SYN_PROFILE_FUNCTION();
-
     KeyDownEvent *e = dynamic_cast<KeyDownEvent*>(_e);
-
     static bool vsync = true;
 
     if (e->getAction() == SYN_KEY_PRESSED)
@@ -320,51 +317,21 @@ void layer::onKeyDownEvent(Event *_e)
                 vsync = !vsync;
                 Application::get().getWindow().setVSYNC(vsync);
                 break;
-
-            case SYN_KEY_V:
-                m_renderBuffer->saveAsPNG();
+            case SYN_KEY_V:         m_renderBuffer->saveAsPNG();            break;
+            case SYN_KEY_ESCAPE:    EventHandler::push_event(new WindowCloseEvent());
                 break;
-
-            case SYN_KEY_ESCAPE:
-                EventHandler::push_event(new WindowCloseEvent());
-                break;
-
-            case SYN_KEY_KP_ADD:
-                s_thetaBH += 0.05f;
-                s_thetaBH = clamp(s_thetaBH, 0.0f, 1.0f);
-                break;
-            case SYN_KEY_KP_SUBTRACT:
-                s_thetaBH -= 0.05f;
-                s_thetaBH = clamp(s_thetaBH, 0.0f, 1.0f);
-                break;
-
-            case SYN_KEY_TAB:
-                m_renderer->toggleRenderBH();
-                break;
-
-            case SYN_KEY_F1:
-                m_renderer->toggleAABB();
-                break;
-
-            case SYN_KEY_F2:
-                m_renderer->toggleHighlightAABB();
-                break;
-
-            case SYN_KEY_F3:
-                m_renderer->toggleHighlightVertex();
-                break;
-
-            case SYN_KEY_F4:
-                m_wireframeMode = !m_wireframeMode;
-                break;
-
-            case SYN_KEY_F5:
+            case SYN_KEY_PLUS:      s_thetaBH = clamp(s_thetaBH + 0.05f, 0.0f, 1.0f);   break;
+            case SYN_KEY_MINUS:     s_thetaBH = clamp(s_thetaBH - 0.05f, 0.0f, 1.0f);   break;
+            case SYN_KEY_TAB:       m_renderer->toggleRenderBH();           break;
+            case SYN_KEY_F1:        m_renderer->toggleAABB();               break;
+            case SYN_KEY_F2:        m_renderer->toggleHighlightAABB();      break;
+            case SYN_KEY_F3:        m_renderer->toggleHighlightVertex();    break;
+            case SYN_KEY_F4:        m_wireframeMode = !m_wireframeMode;     break;
+            case SYN_KEY_F5:    
                 m_toggleCulling = !m_toggleCulling;
                 Renderer::setCulling(m_toggleCulling);
                 break;
-            
-            default:
-                break;
+            default: break;
         }
     }
 }
@@ -393,8 +360,6 @@ void layer::onMouseButtonEvent(Event *_e)
 //----------------------------------------------------------------------------------------
 void layer::onImGuiRender()
 {
-    SYN_PROFILE_FUNCTION();
-
     static bool p_open = true;
 
     static bool opt_fullscreen_persistant = true;

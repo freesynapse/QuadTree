@@ -87,6 +87,7 @@ project "quadtree"
         -- "synapse-dev",
         "synapse",
     }
+
     filter { "configurations.Debug" }
         runtime "Debug"
 
